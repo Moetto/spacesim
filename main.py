@@ -40,7 +40,7 @@ class Empty(Symbol):
         self.char = ' '
 
     def next_symbol(self):
-        return Line.from_symbol(self)
+        return HorizontalLine.from_symbol(self)
 
     @classmethod
     def get_empty(cls):
@@ -50,10 +50,26 @@ class Empty(Symbol):
         pass
 
 
-class Line(Symbol):
+class HorizontalLine(Symbol):
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = '-'
+
+    def next_symbol(self):
+        return VerticalLine.from_symbol(self)
+
+    def set_power(self, on):
+        if on == self.power:
+            return
+        super().set_power(on)
+        for s in self.left, self.right:
+            s.set_power(on)
+
+
+class VerticalLine(Symbol):
+    def __init__(self, up, down, left, right):
+        super().__init__(up, down, left, right)
+        self.char = '|'
 
     def next_symbol(self):
         return Cross.from_symbol(self)
@@ -62,7 +78,7 @@ class Line(Symbol):
         if on == self.power:
             return
         super().set_power(on)
-        for s in self.left, self.right:
+        for s in self.up, self.down:
             s.set_power(on)
 
 
@@ -104,19 +120,70 @@ class Engine(Symbol):
         self.char = 'E'
 
     def next_symbol(self):
+        return PortAnd.from_symbol(self)
+
+
+class PortAnd(Symbol):
+    def __init__(self, up, down, left, right):
+        super().__init__(up, down, left, right)
+        self.char = 'T'
+
+    def next_symbol(self):
+        return PortOr.from_symbol(self)
+
+    def set_power(self, on):
+        if self.left.power and self.right.power:
+            self.power = True
+            self.down.set_power(True)
+        else:
+            self.power = False
+            self.down.set_power(False)
+
+
+class PortOr(Symbol):
+    def __init__(self, up, down, left, right):
+        super().__init__(up, down, left, right)
+        self.char = 'Y'
+
+    def next_symbol(self):
+        return PortNot.from_symbol(self)
+
+    def set_power(self, on):
+        if self.left.power or self.right.power:
+            self.power = True
+            self.down.set_power(True)
+        else:
+            self.power = False
+            self.down.set_power(False)
+
+
+class PortNot(Symbol):
+    def __init__(self, up, down, left, right):
+        super().__init__(up, down, left, right)
+        self.char = 'i'
+
+    def next_symbol(self):
         return Empty.from_symbol(self)
+
+    def set_power(self, on):
+        if not self.up.power:
+            self.power = True
+            self.down.set_power(True)
+        else:
+            self.power = False
+            self.down.set_power(False)
 
 
 def simulate(circuits):
-    batteries = []
+    powered = []
     for y in range(len(circuits) - 1):
         row = circuits[y]
         for symbol in row:
-            if type(symbol) == Battery:
-                batteries.append(symbol)
+            if type(symbol) == Battery or type(symbol) == PortNot:
+                powered.append(symbol)
 
-    for battery in batteries:
-        battery.set_power(True)
+    for symbol in powered:
+        symbol.set_power(True)
 
 
 def main(stdscr):
@@ -199,7 +266,11 @@ def main(stdscr):
 
         if chr(key) == '-':
             symbol = circuits[y][x]
-            circuits[y][x] = Line.from_symbol(symbol)
+            circuits[y][x] = HorizontalLine.from_symbol(symbol)
+
+        if chr(key) == 'l':
+            symbol = circuits[y][x]
+            circuits[y][x] = VerticalLine.from_symbol(symbol)
 
         if chr(key) == '+':
             symbol = circuits[y][x]
@@ -208,6 +279,18 @@ def main(stdscr):
         if chr(key) == 'e':
             symbol = circuits[y][x]
             circuits[y][x] = Engine.from_symbol(symbol)
+
+        if chr(key) == 't':
+            symbol = circuits[y][x]
+            circuits[y][x] = PortAnd.from_symbol(symbol)
+
+        if chr(key) == 'y':
+            symbol = circuits[y][x]
+            circuits[y][x] = PortOr.from_symbol(symbol)
+
+        if chr(key) == 'i':
+            symbol = circuits[y][x]
+            circuits[y][x] = PortNot.from_symbol(symbol)
 
         if chr(key) == 'q':
             break
