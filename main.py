@@ -1,10 +1,61 @@
 import curses
 from curses import wrapper
 
+import time
+from enum import Enum
+
+
+class Direction(Enum):
+    UP = 1
+    DOWN = 2
+    LEFT = 3
+    RIGHT = 4
+
+    @staticmethod
+    def get_opposite_direction(direction):
+        if direction == Direction.UP:
+            return Direction.DOWN
+        if direction == Direction.DOWN:
+            return Direction.UP
+        if direction == Direction.LEFT:
+            return Direction.RIGHT
+        if direction == Direction.RIGHT:
+            return Direction.LEFT
+
+
+class State:
+    def __init__(self, power=False):
+        self.power = power
+
+
+class Port:
+    pass
+
+
+class Blocked(Port):
+    pass
+
+
+class Input(Port):
+    pass
+
+
+class Output(Port):
+    pass
+
+
+class InputOutput(Input, Output):
+    pass
+
 
 class Symbol:
     char = None
-    power = False
+    state = State()
+    new_state = State()
+    up_port = Blocked()
+    down_port = Blocked()
+    left_port = Blocked()
+    right_port = Blocked()
 
     def __init__(self, up, down, left, right):
         self.up = up
@@ -21,8 +72,43 @@ class Symbol:
     def next_symbol(self):
         raise NotImplementedError
 
-    def set_power(self, on):
-        self.power = on
+    def get_port(self, direction):
+        if direction == Direction.UP:
+            return self.up_port
+        if direction == Direction.DOWN:
+            return self.down_port
+        if direction == Direction.LEFT:
+            return self.left_port
+        if direction == Direction.RIGHT:
+            return self.right_port
+
+    def _get_neighbouring_symbol(self, direction):
+        if direction == Direction.UP:
+            return self.up
+        if direction == Direction.DOWN:
+            return self.down
+        if direction == Direction.LEFT:
+            return self.left
+        if direction == Direction.RIGHT:
+            return self.right
+
+    def _is_powered_from(self, direction):
+        neighbour = self._get_neighbouring_symbol(direction)
+        neighbour_port = neighbour.get_port(Direction.get_opposite_direction(direction))
+        if neighbour.state.power and isinstance(self.get_port(direction), Input) and isinstance(neighbour_port, Output):
+            return True
+        return False
+
+    def calculate_new_state(self):
+        self.new_state = State()
+        for direction in Direction:
+            if self._is_powered_from(direction):
+                self.new_state = State(True)
+                return
+
+    def switch_to_new_state(self):
+        self.state = self.new_state
+        self.new_state = None
 
     @classmethod
     def from_symbol(cls, symbol):
@@ -46,11 +132,11 @@ class Empty(Symbol):
     def get_empty(cls):
         return Empty(None, None, None, None)
 
-    def set_power(self, on):
-        pass
-
 
 class HorizontalLine(Symbol):
+    left_port = InputOutput()
+    right_port = InputOutput()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = '-'
@@ -58,15 +144,16 @@ class HorizontalLine(Symbol):
     def next_symbol(self):
         return VerticalLine.from_symbol(self)
 
-    def set_power(self, on):
-        if on == self.power:
-            return
-        super().set_power(on)
-        for s in self.left, self.right:
-            s.set_power(on)
+    def calculate_new_state(self):
+        self.new_state = State()
+        if self._is_powered_from(Direction.LEFT) or self._is_powered_from(Direction.RIGHT):
+            self.new_state = State(True)
 
 
 class VerticalLine(Symbol):
+    up_port = InputOutput()
+    down_port = InputOutput()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = '|'
@@ -74,15 +161,18 @@ class VerticalLine(Symbol):
     def next_symbol(self):
         return Cross.from_symbol(self)
 
-    def set_power(self, on):
-        if on == self.power:
-            return
-        super().set_power(on)
-        for s in self.up, self.down:
-            s.set_power(on)
+    def calculate_new_state(self):
+        self.new_state = State()
+        if self._is_powered_from(Direction.UP) or self._is_powered_from(Direction.DOWN):
+            self.new_state = State(True)
 
 
 class Cross(Symbol):
+    left_port = InputOutput()
+    right_port = InputOutput()
+    up_port = InputOutput()
+    down_port = InputOutput()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = '+'
@@ -90,15 +180,13 @@ class Cross(Symbol):
     def next_symbol(self):
         return Battery.from_symbol(self)
 
-    def set_power(self, on):
-        if on == self.power:
-            return
-        super().set_power(on)
-        for s in self.left, self.right, self.up, self.down:
-            s.set_power(on)
-
 
 class Battery(Symbol):
+    up_port = Output()
+    down_port = Output()
+    left_port = Output()
+    right_port = Output()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'B'
@@ -106,15 +194,16 @@ class Battery(Symbol):
     def next_symbol(self):
         return Engine.from_symbol(self)
 
-    def set_power(self, on):
-        if on == self.power:
-            return
-        super().set_power(on)
-        for s in self.left, self.right, self.up, self.down:
-            s.set_power(on)
+    def calculate_new_state(self):
+        self.new_state = State(True)
 
 
 class Engine(Symbol):
+    up_port = Input()
+    down_port = Input()
+    left_port = Input()
+    right_port = Input()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'E'
@@ -124,6 +213,10 @@ class Engine(Symbol):
 
 
 class PortAnd(Symbol):
+    left_port = Input()
+    right_port = Input()
+    down_port = Output()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'T'
@@ -131,16 +224,17 @@ class PortAnd(Symbol):
     def next_symbol(self):
         return PortOr.from_symbol(self)
 
-    def set_power(self, on):
-        if self.left.power and self.right.power:
-            self.power = True
-            self.down.set_power(True)
-        else:
-            self.power = False
-            self.down.set_power(False)
+    def calculate_new_state(self):
+        self.new_state = State()
+        if self._is_powered_from(Direction.LEFT) and self._is_powered_from(Direction.RIGHT):
+            self.new_state = State(True)
 
 
 class PortOr(Symbol):
+    left_port = Input()
+    right_port = Input()
+    down_port = Output()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'Y'
@@ -148,16 +242,16 @@ class PortOr(Symbol):
     def next_symbol(self):
         return PortNot.from_symbol(self)
 
-    def set_power(self, on):
-        if self.left.power or self.right.power:
-            self.power = True
-            self.down.set_power(True)
-        else:
-            self.power = False
-            self.down.set_power(False)
+    def calculate_new_state(self):
+        self.new_state = State()
+        if self._is_powered_from(Direction.LEFT) or self._is_powered_from(Direction.RIGHT):
+            self.new_state = State(True)
 
 
 class PortNot(Symbol):
+    up_port = Input()
+    down_port = Output()
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'i'
@@ -165,25 +259,44 @@ class PortNot(Symbol):
     def next_symbol(self):
         return Empty.from_symbol(self)
 
-    def set_power(self, on):
-        if not self.up.power:
-            self.power = True
-            self.down.set_power(True)
-        else:
-            self.power = False
-            self.down.set_power(False)
+    def calculate_new_state(self):
+        self.new_state = State(True)
+        if self._is_powered_from(Direction.UP):
+            self.new_state = State()
 
 
-def simulate(circuits):
-    powered = []
-    for y in range(len(circuits) - 1):
-        row = circuits[y]
+def simulate(stdscr, circuits):
+    stdscr.nodelay(1)
+    for row in circuits:
         for symbol in row:
-            if type(symbol) == Battery or type(symbol) == PortNot:
-                powered.append(symbol)
+            symbol.state = State()
+            symbol.new_state = State()
 
-    for symbol in powered:
-        symbol.set_power(True)
+    while 1:
+        for row in circuits:
+            for symbol in row:
+                symbol.calculate_new_state()
+
+        time.sleep(0.1)
+
+        for _y in range(curses.LINES - 1):
+            for _x in range(curses.COLS - 1):
+                s = circuits[_y][_x]
+                s.switch_to_new_state()
+                if s.state.power:
+                    highlight = curses.A_STANDOUT
+                else:
+                    highlight = curses.A_NORMAL
+                stdscr.addstr(_y, _x, str(s), highlight)
+
+        char = stdscr.getch()
+        if char == -1:
+            continue
+        if chr(char) == 'q':
+            break
+
+        stdscr.refresh()
+    stdscr.nodelay(0)
 
 
 def main(stdscr):
@@ -296,18 +409,13 @@ def main(stdscr):
             break
 
         if chr(key) == 's':
-            simulate(circuits)
+            simulate(stdscr, circuits)
 
         for _y in range(curses.LINES - 1):
             for _x in range(curses.COLS - 1):
                 s = circuits[_y][_x]
-                if s.power:
-                    highlight = curses.A_STANDOUT
-                else:
-                    highlight = curses.A_NORMAL
-                s.power = False
-                stdscr.addstr(_y, _x, str(s), highlight)
-        stdscr.refresh()
+                stdscr.addstr(_y, _x, str(s))
+
         stdscr.move(y, x)
 
 
