@@ -1,3 +1,5 @@
+from enum import Enum
+
 from ports import *
 from direction import Direction
 
@@ -98,11 +100,16 @@ class Symbol:
         s.right.left = s
         return s
 
+    @classmethod
+    def get_empty(cls):
+        return cls(None, None, None, None)
+
 
 class Empty(Symbol):
+    char = ' '
+
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = ' '
 
     def next_symbol(self):
         return HorizontalLine.from_symbol(self)
@@ -113,18 +120,14 @@ class Empty(Symbol):
     def is_powered(self):
         return False
 
-    @classmethod
-    def get_empty(cls):
-        return Empty(None, None, None, None)
-
 
 class HorizontalLine(Symbol):
     left_port = InputOutput()
     right_port = InputOutput()
+    char = '-'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = '-'
 
     def next_symbol(self):
         return VerticalLine.from_symbol(self)
@@ -140,10 +143,10 @@ class HorizontalLine(Symbol):
 class VerticalLine(Symbol):
     up_port = InputOutput()
     down_port = InputOutput()
+    char = '|'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = '|'
 
     def next_symbol(self):
         return Cross.from_symbol(self)
@@ -161,10 +164,10 @@ class Cross(Symbol):
     right_port = InputOutput()
     up_port = InputOutput()
     down_port = InputOutput()
+    char = '+'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = '+'
 
     def next_symbol(self):
         return Battery.from_symbol(self)
@@ -175,10 +178,10 @@ class Battery(Symbol):
     down_port = Output()
     left_port = Output()
     right_port = Output()
+    char = 'B'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'B'
         self._power_sources = {self}
 
     def is_power_source(self):
@@ -199,10 +202,10 @@ class Engine(Symbol):
     down_port = Input()
     left_port = Input()
     right_port = Input()
+    char = 'E'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'E'
 
     def next_symbol(self):
         return PortAnd.from_symbol(self)
@@ -220,10 +223,10 @@ class PortAnd(LogicPort):
     left_port = Input()
     right_port = Input()
     down_port = Output()
+    char = 'T'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'T'
         self._power_sources = {self}
 
     def next_symbol(self):
@@ -243,10 +246,10 @@ class PortOr(LogicPort):
     left_port = Input()
     right_port = Input()
     down_port = Output()
+    char = 'Y'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'Y'
 
     def next_symbol(self):
         return PortNot.from_symbol(self)
@@ -264,10 +267,10 @@ class PortOr(LogicPort):
 class PortNot(LogicPort):
     up_port = Input()
     down_port = Output()
+    char = 'i'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'i'
 
     def next_symbol(self):
         return Button.from_symbol(self)
@@ -287,10 +290,10 @@ class Button(Symbol):
     left_port = Output()
     right_port = Output()
     pressed = False
+    char = 'b'
 
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
-        self.char = 'b'
         self._power_sources.add(self)
 
     def next_symbol(self):
@@ -301,3 +304,34 @@ class Button(Symbol):
 
     def is_power_source(self):
         return True
+
+
+components = {
+    Empty: Empty.char,
+    HorizontalLine: HorizontalLine.char,
+    VerticalLine: VerticalLine.char,
+    Cross: Cross.char,
+    Battery: Battery.char,
+    Button: Button.char,
+    PortAnd: PortAnd.char,
+    PortOr: PortOr.char,
+    PortNot: PortNot.char,
+    Engine: Engine.char,
+}
+
+component_keys = {
+    Empty.char: Empty,
+    HorizontalLine.char: HorizontalLine,
+    VerticalLine.char: VerticalLine,
+    Cross.char: Cross,
+    Battery.char: Battery,
+    Button.char: Button,
+    PortAnd.char: PortAnd,
+    PortOr.char: PortOr,
+    PortNot.char: PortNot,
+    Engine.char: Engine,
+}
+
+
+def get_component(char):
+    return component_keys[char]
