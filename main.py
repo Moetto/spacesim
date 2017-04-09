@@ -56,6 +56,7 @@ class Symbol:
     down_port = Blocked()
     left_port = Blocked()
     right_port = Blocked()
+    _power_sources = set()
 
     def __init__(self, up, down, left, right):
         self.up = up
@@ -71,6 +72,9 @@ class Symbol:
 
     def next_symbol(self):
         raise NotImplementedError
+
+    def is_power_source(self):
+        return False
 
     def get_port(self, direction):
         if direction == Direction.UP:
@@ -92,23 +96,37 @@ class Symbol:
         if direction == Direction.RIGHT:
             return self.right
 
-    def _is_powered_from(self, direction):
+    def _is_connected_from(self, direction):
         neighbour = self._get_neighbouring_symbol(direction)
         neighbour_port = neighbour.get_port(Direction.get_opposite_direction(direction))
-        if neighbour.state.power and isinstance(self.get_port(direction), Input) and isinstance(neighbour_port, Output):
+        if isinstance(self.get_port(direction), Input) and isinstance(neighbour_port, Output):
             return True
         return False
+
+    def is_powered(self):
+        for ps in self._power_sources:
+            if ps.state.power:
+                return True
+        return False
+
+    def get_power_sources(self):
+        return self._power_sources
 
     def calculate_new_state(self):
         self.new_state = State()
         for direction in Direction:
-            if self._is_powered_from(direction):
-                self.new_state = State(True)
-                return
+            if self._is_connected_from(direction):
+                self._power_sources = self._power_sources | self._get_neighbouring_symbol(direction).get_power_sources()
+        self.new_state = State(self.is_powered())
 
     def switch_to_new_state(self):
         self.state = self.new_state
         self.new_state = None
+
+    def reset(self):
+        self._power_sources = set()
+        if self.is_power_source():
+            self._power_sources.add(self)
 
     @classmethod
     def from_symbol(cls, symbol):
@@ -128,6 +146,12 @@ class Empty(Symbol):
     def next_symbol(self):
         return HorizontalLine.from_symbol(self)
 
+    def calculate_new_state(self):
+        self.new_state = State()
+
+    def is_powered(self):
+        return False
+
     @classmethod
     def get_empty(cls):
         return Empty(None, None, None, None)
@@ -146,8 +170,10 @@ class HorizontalLine(Symbol):
 
     def calculate_new_state(self):
         self.new_state = State()
-        if self._is_powered_from(Direction.LEFT) or self._is_powered_from(Direction.RIGHT):
-            self.new_state = State(True)
+        for direction in Direction.LEFT, Direction.RIGHT:
+            if self._is_connected_from(direction):
+                self._power_sources = self._power_sources | self._get_neighbouring_symbol(direction).get_power_sources()
+        self.new_state = State(self.is_powered())
 
 
 class VerticalLine(Symbol):
@@ -163,8 +189,10 @@ class VerticalLine(Symbol):
 
     def calculate_new_state(self):
         self.new_state = State()
-        if self._is_powered_from(Direction.UP) or self._is_powered_from(Direction.DOWN):
-            self.new_state = State(True)
+        for direction in Direction.UP, Direction.DOWN:
+            if self._is_connected_from(direction):
+                self._power_sources = self._power_sources | self._get_neighbouring_symbol(direction).get_power_sources()
+        self.new_state = State(self.is_powered())
 
 
 class Cross(Symbol):
@@ -190,9 +218,16 @@ class Battery(Symbol):
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'B'
+        self._power_sources = {self}
+
+    def is_power_source(self):
+        return True
 
     def next_symbol(self):
         return Engine.from_symbol(self)
+
+    def is_powered(self):
+        return True
 
     def calculate_new_state(self):
         self.new_state = State(True)
@@ -212,7 +247,15 @@ class Engine(Symbol):
         return PortAnd.from_symbol(self)
 
 
-class PortAnd(Symbol):
+class LogicPort(Symbol):
+    def is_power_source(self):
+        return True
+
+    def get_power_sources(self):
+        return {self}
+
+
+class PortAnd(LogicPort):
     left_port = Input()
     right_port = Input()
     down_port = Output()
@@ -220,17 +263,22 @@ class PortAnd(Symbol):
     def __init__(self, up, down, left, right):
         super().__init__(up, down, left, right)
         self.char = 'T'
+        self._power_sources = {self}
 
     def next_symbol(self):
         return PortOr.from_symbol(self)
 
+    def is_powered(self):
+        for direction in Direction.LEFT, Direction.RIGHT:
+            if not self._is_connected_from(direction) or not self._get_neighbouring_symbol(direction).is_powered():
+                return False
+        return True
+
     def calculate_new_state(self):
-        self.new_state = State()
-        if self._is_powered_from(Direction.LEFT) and self._is_powered_from(Direction.RIGHT):
-            self.new_state = State(True)
+        self.new_state = State(self.is_powered())
 
 
-class PortOr(Symbol):
+class PortOr(LogicPort):
     left_port = Input()
     right_port = Input()
     down_port = Output()
@@ -244,11 +292,11 @@ class PortOr(Symbol):
 
     def calculate_new_state(self):
         self.new_state = State()
-        if self._is_powered_from(Direction.LEFT) or self._is_powered_from(Direction.RIGHT):
+        if self._is_connected_from(Direction.LEFT) or self._is_connected_from(Direction.RIGHT):
             self.new_state = State(True)
 
 
-class PortNot(Symbol):
+class PortNot(LogicPort):
     up_port = Input()
     down_port = Output()
 
@@ -257,12 +305,37 @@ class PortNot(Symbol):
         self.char = 'i'
 
     def next_symbol(self):
+        return Button.from_symbol(self)
+
+    def is_powered(self):
+        if self._is_connected_from(Direction.UP) and self._get_neighbouring_symbol(Direction.UP).is_powered():
+            return True
+        return False
+
+    def calculate_new_state(self):
+        self.new_state = State(not self.is_powered())
+
+
+class Button(Symbol):
+    up_port = Output()
+    down_port = Output()
+    left_port = Output()
+    right_port = Output()
+    pressed = False
+
+    def __init__(self, up, down, left, right):
+        super().__init__(up, down, left, right)
+        self.char = 'b'
+        self._power_sources.add(self)
+
+    def next_symbol(self):
         return Empty.from_symbol(self)
 
     def calculate_new_state(self):
-        self.new_state = State(True)
-        if self._is_powered_from(Direction.UP):
-            self.new_state = State()
+        self.new_state = State(self.pressed)
+
+    def is_power_source(self):
+        return True
 
 
 def simulate(stdscr, circuits):
@@ -271,6 +344,10 @@ def simulate(stdscr, circuits):
         for symbol in row:
             symbol.state = State()
             symbol.new_state = State()
+
+    for row in circuits:
+        for symbol in row:
+            symbol.reset()
 
     while 1:
         for row in circuits:
@@ -294,6 +371,11 @@ def simulate(stdscr, circuits):
             continue
         if chr(char) == 'q':
             break
+        if chr(char) == ' ':
+            for row in circuits:
+                for symbol in row:
+                    if isinstance(symbol, Button):
+                        symbol.pressed = not symbol.pressed
 
         stdscr.refresh()
     stdscr.nodelay(0)
@@ -404,6 +486,10 @@ def main(stdscr):
         if chr(key) == 'i':
             symbol = circuits[y][x]
             circuits[y][x] = PortNot.from_symbol(symbol)
+
+        if chr(key) == 'n':
+            symbol = circuits[y][x]
+            circuits[y][x] = Button.from_symbol(symbol)
 
         if chr(key) == 'q':
             break
