@@ -14,7 +14,7 @@ class Grid:
         self.link()
 
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename, min_width, min_height):
         f = open(filename, 'r')
         grid = []
         for line in f:
@@ -23,7 +23,12 @@ class Grid:
                 cls_symbol = get_component(char)
                 row.append(cls_symbol.get_empty())
             if row:
+                if len(row) < min_width:
+                    row.extend([Empty.get_empty() for i in range(min_width - len(row))])
                 grid.append(row)
+        if len(grid) < min_height:
+            for i in range(min_height - len(grid)):
+                grid.append([Empty.get_empty() for o in range(min_width)])
         g = Grid(len(grid[0]), len(grid))
         g.grid = grid
         g.link()
