@@ -6,17 +6,21 @@
 #define SIMULINK_SIMULATIONENGINE_H
 
 #include <vector>
+#include <memory>
 #include "symbol.h"
+#include "grid.h"
 
 class SimulationEngine {
-    std::vector<std::vector<Symbol *> *> components;
+    std::shared_ptr<Grid> grid;
 
 public:
     SimulationEngine();
 
     void tick();
 
-    Symbol get_item(unsigned long x, unsigned long y);
+    void setGrid(std::shared_ptr<Grid> grid);
+
+    std::shared_ptr<Grid> getGrid();
 };
 
 
