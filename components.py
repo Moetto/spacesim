@@ -331,7 +331,3 @@ component_keys = {
     Engine.char: Engine,
 }
 
-
-def get_component(char):
-    return simulink.Battery
-    # return component_keys[char]

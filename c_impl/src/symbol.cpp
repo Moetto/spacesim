@@ -19,11 +19,6 @@ Symbol::Symbol() {
 }
 
 void Symbol::simulate() {
-    if (state == powered) {
-        next_state = unpowered;
-    } else {
-        next_state = powered;
-    }
 }
 
 void Symbol::switchState() {
@@ -32,6 +27,10 @@ void Symbol::switchState() {
 
 std::string Symbol::repr() const {
     return "E " + std::to_string(this->state);
+}
+
+std::string Symbol::getChar() {
+    return " ";
 }
 
 std::ostream &operator<<(std::ostream &strm, Symbol s) {

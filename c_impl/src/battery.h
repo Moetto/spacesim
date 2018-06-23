@@ -20,6 +20,8 @@ public:
     std::string repr() const override;
 
     void simulate() override;
+
+    std::string getChar();
 };
 
 

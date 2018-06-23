@@ -21,3 +21,7 @@ Battery::Battery(std::shared_ptr<Symbol> u, std::shared_ptr<Symbol> l, std::shar
     state = powered;
     next_state = powered;
 }
+
+std::string Battery::getChar() {
+    return "B";
+}

@@ -24,6 +24,8 @@ public:
     void switchState();
 
     virtual std::string repr() const;
+
+    virtual std::string getChar();
 };
 
 std::ostream &operator<<(std::ostream &, Symbol);
@@ -37,6 +39,12 @@ template<class T>
 std::shared_ptr<Symbol>
 build_with_neighbours(std::shared_ptr<Symbol> s1, std::shared_ptr<Symbol> s2, std::shared_ptr<Symbol> s3, std::shared_ptr<Symbol> s4) {
     return std::shared_ptr<Symbol>(new T(s1, s2, s3, s4));
+}
+
+template<class T>
+std::shared_ptr<Symbol>
+build_from_existing(std::shared_ptr<Symbol> s) {
+    return std::shared_ptr<Symbol>(new T(s->up, s->left, s->right, s->down));
 }
 
 
