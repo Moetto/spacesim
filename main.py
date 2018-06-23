@@ -1,9 +1,9 @@
 import curses
 import argparse
 from curses import wrapper
-from engine import SimulationEngine
+from build.simulink import SimulationEngine, Grid
 
-from grid import Grid
+from editor import Editor
 
 
 def main(stdscr):
@@ -14,8 +14,13 @@ def main(stdscr):
     else:
         grid = Grid(curses.COLS, curses.LINES)
 
-    engine = SimulationEngine(stdscr, grid)
-    engine.edit_mode()
+    engine = SimulationEngine()
+    engine.set_grid(grid)
+
+    editor = Editor(stdscr, grid)
+    while 1:
+        editor.edit_mode()
+        engine.tick()
 
 
 args = argparse.ArgumentParser()

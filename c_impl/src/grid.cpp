@@ -1,5 +1,6 @@
 
 #include "grid.h"
+#include "battery.h"
 #include <memory>
 
 Grid::Grid(unsigned int w, unsigned int h) {

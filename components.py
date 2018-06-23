@@ -1,7 +1,6 @@
-from enum import Enum
-
 from ports import *
 from direction import Direction
+from build import simulink
 
 
 class State:
@@ -334,4 +333,5 @@ component_keys = {
 
 
 def get_component(char):
-    return component_keys[char]
+    return simulink.Battery
+    # return component_keys[char]

@@ -9,17 +9,17 @@
 
 class Symbol {
 public:
-    std::shared_ptr<Symbol> north, west, east, south;
+    std::shared_ptr<Symbol> up, left, right, down;
     State state, next_state;
 
     Symbol();
 
-    Symbol(std::shared_ptr<Symbol> n,
-           std::shared_ptr<Symbol> e,
-           std::shared_ptr<Symbol> w,
-           std::shared_ptr<Symbol> s);
+    Symbol(std::shared_ptr<Symbol> u,
+           std::shared_ptr<Symbol> r,
+           std::shared_ptr<Symbol> l,
+           std::shared_ptr<Symbol> d);
 
-    void simulate();
+    virtual void simulate();
 
     void switchState();
 
@@ -27,5 +27,17 @@ public:
 };
 
 std::ostream &operator<<(std::ostream &, Symbol);
+
+template<class T>
+std::shared_ptr<Symbol> build() {
+    return std::shared_ptr<Symbol>(new T());
+}
+
+template<class T>
+std::shared_ptr<Symbol>
+build_with_neighbours(std::shared_ptr<Symbol> s1, std::shared_ptr<Symbol> s2, std::shared_ptr<Symbol> s3, std::shared_ptr<Symbol> s4) {
+    return std::shared_ptr<Symbol>(new T(s1, s2, s3, s4));
+}
+
 
 #endif

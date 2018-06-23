@@ -9,9 +9,17 @@
 
 class Battery : public Symbol {
 public:
-    using Symbol::Symbol;
+    Battery();
 
-    std::string repr() const override ;
+    Battery(std::shared_ptr<Symbol> u,
+            std::shared_ptr<Symbol> l,
+            std::shared_ptr<Symbol> r,
+            std::shared_ptr<Symbol> d);
+
+
+    std::string repr() const override;
+
+    void simulate() override;
 };
 
 

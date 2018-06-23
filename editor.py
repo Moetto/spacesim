@@ -1,9 +1,12 @@
 import curses
 import time
-from components import *
+
+from components import get_component
+
+from build.simulink import *
 
 
-class SimulationEngine:
+class Editor:
     x = 0
     y = 0
 
@@ -23,7 +26,7 @@ class SimulationEngine:
         self.stdscr = stdscr
         self.main_window_height = curses.LINES - 3
         self.main_window_width = curses.COLS
-        self.status_bar = SimulationEngine.StatusBar(self.main_window_height, 0, 3, self.main_window_width)
+        self.status_bar = Editor.StatusBar(self.main_window_height, 0, 3, self.main_window_width)
         stdscr.resize(self.main_window_height, self.main_window_width)
         self.grid = grid
 
@@ -32,7 +35,7 @@ class SimulationEngine:
         while 1:
             for _y in range(self.main_window_height - 1):
                 for _x in range(self.main_window_width - 1):
-                    s = self.grid.grid[_y][_x]
+                    s = self.grid.get(_x, _y)
                     self.stdscr.addstr(_y, _x, str(s))
 
             self.stdscr.move(self.y, self.x)
@@ -62,16 +65,14 @@ class SimulationEngine:
                 break
 
             if char == 's':
-                self.simulate()
-                self.status_bar.show_message("Edit mode")
-                continue
+                return
 
             if char == 'w':
                 self.grid.save("simu.lation")
                 self.status_bar.show_message("Saved")
                 continue
 
-            symbol = self.grid.grid[self.y][self.x]
+            symbol = self.grid.get(self.x, self.y)
 
             if char == ' ':
                 new_symbol = symbol.next_symbol()
@@ -81,11 +82,12 @@ class SimulationEngine:
 
             else:
                 try:
-                    new_symbol = get_component(char).from_symbol(symbol)
+                    new_symbol = get_component(char)(symbol.up, symbol.left, symbol.right, symbol.down)
                 except KeyError:
                     continue
 
-            self.grid.grid[self.y][self.x] = new_symbol
+            new_symbol = Symbol()
+            self.grid.set(self.x, self.y, new_symbol)
 
     def simulate(self):
         self.status_bar.show_message("Simulation mode")

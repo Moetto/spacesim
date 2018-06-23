@@ -1,16 +1,16 @@
 #include "symbol.h"
 
-Symbol::Symbol(std::shared_ptr<Symbol> n,
-               std::shared_ptr<Symbol> e,
-               std::shared_ptr<Symbol> w,
-               std::shared_ptr<Symbol> s) {
+Symbol::Symbol(std::shared_ptr<Symbol> u,
+               std::shared_ptr<Symbol> l,
+               std::shared_ptr<Symbol> r,
+               std::shared_ptr<Symbol> d) {
     state = unpowered;
     next_state = unpowered;
 
-    north = n;
-    west = w;
-    east = e;
-    south = s;
+    up = u;
+    left = l;
+    right = r;
+    down = d;
 }
 
 Symbol::Symbol() {
