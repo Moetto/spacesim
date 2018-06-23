@@ -8,7 +8,6 @@
 #include "state.h"
 
 class Symbol {
-
 public:
     std::shared_ptr<Symbol> north, west, east, south;
     State state, next_state;
@@ -23,8 +22,9 @@ public:
     void simulate();
 
     void switchState();
-};
 
+    virtual std::string repr() const;
+};
 
 std::ostream &operator<<(std::ostream &, Symbol);
 

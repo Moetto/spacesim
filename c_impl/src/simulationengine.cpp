@@ -8,6 +8,13 @@
 SimulationEngine::SimulationEngine() = default;
 
 void SimulationEngine::tick() {
+    for (auto &symbol : grid->symbols) {
+        symbol->simulate();
+    }
+
+    for (auto &symbol : grid->symbols) {
+        symbol->switchState();
+    }
 }
 
 std::shared_ptr<Grid> SimulationEngine::getGrid() {

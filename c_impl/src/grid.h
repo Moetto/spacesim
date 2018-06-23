@@ -7,6 +7,7 @@
 class Grid {
     std::vector<std::shared_ptr<Symbol>> symbols;
     unsigned int width, height;
+    friend class SimulationEngine;
 
 public:
     Grid(unsigned int w, unsigned int h);
