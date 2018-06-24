@@ -11,3 +11,14 @@ std::string VerticalLine::repr() const {
 std::string VerticalLine::getChar() {
     return "|";
 }
+
+VerticalLine::VerticalLine() {
+    inputs = std::set<Direction>({UP, DOWN});
+    outputs = std::set<Direction>({UP, DOWN});
+}
+
+VerticalLine::VerticalLine(std::shared_ptr<Symbol> u, std::shared_ptr<Symbol> l, std::shared_ptr<Symbol> r,
+                           std::shared_ptr<Symbol> d) : Line(u, l, r, d) {
+    inputs = std::set<Direction>({UP, DOWN});
+    outputs = std::set<Direction>({UP, DOWN});
+}

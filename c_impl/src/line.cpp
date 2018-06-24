@@ -4,9 +4,6 @@
 
 #include "line.h"
 
-void Line::simulate() {
-}
-
 Line::Line() {
     state = unpowered;
     next_state = unpowered;

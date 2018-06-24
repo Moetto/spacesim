@@ -16,12 +16,11 @@ public:
             std::shared_ptr<Symbol> r,
             std::shared_ptr<Symbol> d);
 
+    bool isPowered() override;
 
     std::string repr() const override;
 
-    void simulate() override;
-
-    std::string getChar();
+    std::string getChar() override;
 };
 
 

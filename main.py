@@ -10,6 +10,40 @@ from screen import Screen
 from state import State
 
 
+def setup_test(grid):
+    a = grid.get(1, 1)
+    # b = Battery.build_from_existing(a)
+    b = Battery.build()
+    grid.set(1, 1, b)
+    for i in range(2, 6):
+        b = VerticalLine.build()
+        grid.set(1, i, b)
+
+    b = CrossLine.build()
+    grid.set(1, 4, b)
+
+    b = HorizontalLine.build()
+    grid.set(2, 1, b)
+
+    b = VerticalLine.build()
+    grid.set(3, 1, b)
+
+    for y in range(2, 8):
+        for x in [4, 6]:
+            b = VerticalLine.build()
+            grid.set(x, y, b)
+
+
+    b = NotPort.build()
+    grid.set(4, 2, b)
+
+    b = NotPort.build()
+    grid.set(6, 4, b)
+
+    b = Battery.build()
+    grid.set(6, 2, b)
+
+
 def main(stdscr):
     stdscr.clear()
     stdscr.refresh()
@@ -27,6 +61,8 @@ def main(stdscr):
 
     inp = get_input(stdscr)
 
+    setup_test(grid)
+
     while inp != Input.QUIT:
         if inp == Input.SIMULATE:
             state.message = "Simulation"
@@ -36,11 +72,11 @@ def main(stdscr):
             while inp != Input.QUIT:
                 engine.tick()
                 screen.draw(state)
-                sleep(.05)
+                sleep(.55)
                 inp = get_input(stdscr)
-            stdscr.nodelay(False)
             state.message = "Edit mode"
             state.show_power = False
+            stdscr.nodelay(False)
         if inp == Input.UP:
             state.cursor_y -= 1
         if inp == Input.DOWN:
@@ -49,18 +85,24 @@ def main(stdscr):
             state.cursor_x -= 1
         if inp == Input.RIGHT:
             state.cursor_x += 1
-        if inp == Input.BATTERY or inp == Input.VERTICAL_LINE or inp == Input.NEXT_SYMBOL or inp == Input.CLEAR or inp == Input.EMPTY:
-            current = grid.get(state.cursor_x, state.cursor_y)
-            new = None
-            if inp == Input.BATTERY:
-                new = Battery.build_from_existing(current)
-            elif inp == Input.VERTICAL_LINE:
-                new = VerticalLine.build_from_existing(current)
-            if new:
-                grid.set(state.cursor_x, state.cursor_y, new)
+
+        new = None
+        if inp == Input.BATTERY:
+            new = Battery.build()
+        elif inp == Input.VERTICAL_LINE:
+            new = VerticalLine.build()
+        elif inp == Input.HORIZONTAL_LINE:
+            new = HorizontalLine.build()
+        elif inp == Input.CROSS_LINE:
+            new = CrossLine.build()
+        elif inp == Input.NOT_PORT:
+            new = NotPort.build()
+        elif inp == Input.CLEAR:
+            new = Empty.build()
+        if new:
+            grid.set(state.cursor_x, state.cursor_y, new)
 
         screen.draw(state)
-        sleep(0.1)
         inp = get_input(stdscr)
 
 

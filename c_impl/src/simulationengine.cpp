@@ -8,11 +8,16 @@
 SimulationEngine::SimulationEngine() = default;
 
 void SimulationEngine::tick() {
-    for (auto &symbol : grid->symbols) {
-        symbol->simulate();
+    for (auto symbol : grid->symbols) {
+        symbol->reset();
     }
 
-    for (auto &symbol : grid->symbols) {
+    for (auto symbol : grid->symbols) {
+        if (symbol->is_power_source)
+            symbol->simulate();
+    }
+
+    for (auto symbol : grid->symbols) {
         symbol->switchState();
     }
 }

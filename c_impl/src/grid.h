@@ -8,12 +8,14 @@ class Grid {
     std::vector<std::shared_ptr<Symbol>> symbols;
     unsigned int width, height;
     friend class SimulationEngine;
+    void link();
+    void link(unsigned int x, unsigned int y);
 
 public:
     Grid(unsigned int w, unsigned int h);
 
     std::shared_ptr<Symbol> get(unsigned int x, unsigned int y);
 
-    void set(unsigned int x, unsigned int y, std::shared_ptr<Symbol> &s);
+    void set(unsigned int x, unsigned int y, std::shared_ptr<Symbol> s);
 };
 #endif

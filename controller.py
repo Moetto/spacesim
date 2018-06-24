@@ -15,13 +15,22 @@ class Input(Enum):
     NEXT_SYMBOL = auto()
     BATTERY = auto()
     VERTICAL_LINE = auto()
+    HORIZONTAL_LINE = auto()
+    CROSS_LINE = auto()
+    NOT_PORT = auto()
 
 
 def symbol_for_char(char):
     if char == "|" or char == "I":
         return Input.VERTICAL_LINE
+    if char == "-":
+        return Input.HORIZONTAL_LINE
+    if char == "+":
+        return Input.CROSS_LINE
     if char == "B":
         return Input.BATTERY
+    if char == "i":
+        return Input.NOT_PORT
     return Input.EMPTY
 
 

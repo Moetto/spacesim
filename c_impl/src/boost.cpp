@@ -4,6 +4,10 @@
 #include "battery.h"
 #include "simulationengine.h"
 #include "verticalline.h"
+#include "horizontalline.h"
+#include "crossline.h"
+#include "empty.h"
+#include "notport.h"
 
 
 BOOST_PYTHON_MODULE (simulink) {
@@ -18,17 +22,19 @@ BOOST_PYTHON_MODULE (simulink) {
             .def_readwrite("right", &Symbol::right)
             .def_readwrite("down", &Symbol::down)
             .def_readwrite("state", &Symbol::state)
-            .def("build", build<Symbol>)
-            .def("build_with_neighbours", build_with_neighbours<Symbol>)
-            .def("build_from_existing", build_from_existing<Symbol>);
+            .def("build", build<Symbol>);
+    class_<Empty, std::shared_ptr<Empty>, bases<Symbol>>("Empty", no_init)
+            .def("build", build<Empty>);
     class_<Battery, std::shared_ptr<Battery>, bases<Symbol>>("Battery", no_init)
-            .def("build", build<Battery>)
-            .def("build_with_neighbours", build_with_neighbours<Battery>)
-            .def("build_from_existing", build_from_existing<Battery>);
+            .def("build", build<Battery>);
     class_<VerticalLine, std::shared_ptr<VerticalLine>, bases<Symbol>>("VerticalLine", no_init)
-            .def("build", build<VerticalLine>)
-            .def("build_with_neighbours", build_with_neighbours<VerticalLine>)
-            .def("build_from_existing", build_from_existing<VerticalLine>);
+            .def("build", build<VerticalLine>);
+    class_<HorizontalLine, std::shared_ptr<HorizontalLine>, bases<Symbol>>("HorizontalLine", no_init)
+            .def("build", build<HorizontalLine>);
+    class_<CrossLine, std::shared_ptr<CrossLine>, bases<Symbol>>("CrossLine", no_init)
+            .def("build", build<CrossLine>);
+    class_<NotPort, std::shared_ptr<NotPort>, bases<Symbol>>("NotPort", no_init)
+            .def("build", build<NotPort>);
     class_<SimulationEngine>("SimulationEngine")
             .def("tick", &SimulationEngine::tick)
             .def("set_grid", &SimulationEngine::setGrid)
@@ -37,6 +43,7 @@ BOOST_PYTHON_MODULE (simulink) {
             .def("get", &Grid::get)
             .def("set", &Grid::set);
     enum_<State>("ComponentState")
+            .value("unknown", unknown)
             .value("unpowered", unpowered)
             .value("powered", powered);
 }

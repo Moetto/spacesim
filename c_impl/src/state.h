@@ -6,6 +6,7 @@
 #define SIMULINK_STATE_H
 
 enum State {
+    unknown,
     unpowered,
     powered
 };

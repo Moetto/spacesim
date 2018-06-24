@@ -2,16 +2,16 @@
 // Created by t3mu on 23/06/18.
 //
 
-#ifndef SIMULINK_VERTICALLINE_H
-#define SIMULINK_VERTICALLINE_H
+#ifndef SIMULINK_CROSSLINE_H
+#define SIMULINK_CROSSLINE_H
 
 #include "line.h"
 
-class VerticalLine : public Line {
+class CrossLine : public Line{
 public:
-    VerticalLine();
+    CrossLine();
 
-    VerticalLine(std::shared_ptr<Symbol> u,
+    CrossLine(std::shared_ptr<Symbol> u,
                  std::shared_ptr<Symbol> l,
                  std::shared_ptr<Symbol> r,
                  std::shared_ptr<Symbol> d);
@@ -21,4 +21,5 @@ public:
     std::string getChar() override;
 };
 
-#endif //SIMULINK_VERTICALLINE_H
+
+#endif //SIMULINK_CROSSLINE_H

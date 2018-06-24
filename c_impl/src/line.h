@@ -17,8 +17,6 @@ public:
 
     std::string repr() const override = 0;
 
-    void simulate() override;
-
     std::string getChar() override = 0;
 };
 
